@@ -74,7 +74,123 @@
 			]
 		},
 		{
+			"name": "[concat(parameters('workspaceName'), '/SubscriptionPipeline')]",
+			"type": "Microsoft.Synapse/workspaces/pipelines",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"activities": [
+					{
+						"name": "BILLING_EMAIL",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "Dataflow2",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"source1": {},
+									"sink1": {}
+								}
+							},
+							"staging": {},
+							"integrationRuntime": {
+								"referenceName": "AutoResolveIntegrationRuntime",
+								"type": "IntegrationRuntimeReference"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2023-06-05T06:55:46Z"
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/dataflows/Dataflow2')]",
+				"[concat(variables('workspaceId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('workspaceName'), '/AzureSqlTable1')]",
+			"type": "Microsoft.Synapse/workspaces/datasets",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "AzureSqlDatabase1",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "ID",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "UUID",
+						"type": "varchar"
+					},
+					{
+						"name": "ORG_ID",
+						"type": "varchar"
+					},
+					{
+						"name": "ORG_HANDLE",
+						"type": "varchar"
+					},
+					{
+						"name": "TIER_ID",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "BILLING_DATE",
+						"type": "bigint",
+						"precision": 19
+					},
+					{
+						"name": "IS_ACTIVE",
+						"type": "bit"
+					},
+					{
+						"name": "BILLING_EMAIL",
+						"type": "varchar"
+					},
+					{
+						"name": "CREATED_AT",
+						"type": "bigint",
+						"precision": 19
+					},
+					{
+						"name": "UPDATED_AT",
+						"type": "bigint",
+						"precision": 19
+					}
+				],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "ASG_SUBSCRIPTION"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/linkedServices/AzureSqlDatabase1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/subscription')]",
 			"type": "Microsoft.Synapse/workspaces/datasets",
 			"apiVersion": "2019-06-01-preview",
 			"properties": {
@@ -300,6 +416,93 @@
 			},
 			"dependsOn": [
 				"[concat(variables('workspaceId'), '/datasets/AzureSqlTable1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/Dataflow2')]",
+			"type": "Microsoft.Synapse/workspaces/dataflows",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "subscription",
+								"type": "DatasetReference"
+							},
+							"name": "source1"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "subscription",
+								"type": "DatasetReference"
+							},
+							"name": "sink1"
+						}
+					],
+					"transformations": [
+						{
+							"name": "derivedColumn1"
+						},
+						{
+							"name": "alterRow1"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          ID as integer,",
+						"          UUID as string,",
+						"          ORG_ID as string,",
+						"          ORG_HANDLE as string,",
+						"          TIER_ID as integer,",
+						"          BILLING_DATE as long,",
+						"          IS_ACTIVE as boolean,",
+						"          BILLING_EMAIL as string,",
+						"          CREATED_AT as long,",
+						"          UPDATED_AT as long",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: true,",
+						"     inferDriftedColumnTypes: true,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> source1",
+						"source1 derive(BILLING_EMAIL = concat(UUID,'@example.com')) ~> derivedColumn1",
+						"derivedColumn1 alterRow(updateIf(!isNull(UUID))) ~> alterRow1",
+						"alterRow1 sink(allowSchemaDrift: false,",
+						"     validateSchema: true,",
+						"     input(",
+						"          ID as integer,",
+						"          UUID as string,",
+						"          ORG_ID as string,",
+						"          ORG_HANDLE as string,",
+						"          TIER_ID as integer,",
+						"          BILLING_DATE as long,",
+						"          IS_ACTIVE as boolean,",
+						"          BILLING_EMAIL as string,",
+						"          CREATED_AT as long,",
+						"          UPDATED_AT as long",
+						"     ),",
+						"     deletable:false,",
+						"     insertable:false,",
+						"     updateable:true,",
+						"     upsertable:false,",
+						"     keys:['ID'],",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError',",
+						"     mapColumn(",
+						"          ID,",
+						"          BILLING_EMAIL",
+						"     )) ~> sink1"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/datasets/subscription')]"
 			]
 		},
 		{
