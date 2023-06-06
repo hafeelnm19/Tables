@@ -1,0 +1,62 @@
+{
+	"name": "subscription",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "AzureSqlDatabase1",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "ID",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "UUID",
+				"type": "varchar"
+			},
+			{
+				"name": "ORG_ID",
+				"type": "varchar"
+			},
+			{
+				"name": "ORG_HANDLE",
+				"type": "varchar"
+			},
+			{
+				"name": "TIER_ID",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "BILLING_DATE",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "IS_ACTIVE",
+				"type": "bit"
+			},
+			{
+				"name": "BILLING_EMAIL",
+				"type": "varchar"
+			},
+			{
+				"name": "CREATED_AT",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "UPDATED_AT",
+				"type": "bigint",
+				"precision": 19
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "ASG_SUBSCRIPTION"
+		}
+	}
+}

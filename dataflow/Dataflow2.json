@@ -1,0 +1,82 @@
+{
+	"name": "Dataflow2",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "subscription",
+						"type": "DatasetReference"
+					},
+					"name": "source1"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "subscription",
+						"type": "DatasetReference"
+					},
+					"name": "sink1"
+				}
+			],
+			"transformations": [
+				{
+					"name": "derivedColumn1"
+				},
+				{
+					"name": "alterRow1"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          ID as integer,",
+				"          UUID as string,",
+				"          ORG_ID as string,",
+				"          ORG_HANDLE as string,",
+				"          TIER_ID as integer,",
+				"          BILLING_DATE as long,",
+				"          IS_ACTIVE as boolean,",
+				"          BILLING_EMAIL as string,",
+				"          CREATED_AT as long,",
+				"          UPDATED_AT as long",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: true,",
+				"     inferDriftedColumnTypes: true,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> source1",
+				"source1 derive(BILLING_EMAIL = concat(UUID,'@example.com')) ~> derivedColumn1",
+				"derivedColumn1 alterRow(updateIf(!isNull(UUID))) ~> alterRow1",
+				"alterRow1 sink(allowSchemaDrift: false,",
+				"     validateSchema: true,",
+				"     input(",
+				"          ID as integer,",
+				"          UUID as string,",
+				"          ORG_ID as string,",
+				"          ORG_HANDLE as string,",
+				"          TIER_ID as integer,",
+				"          BILLING_DATE as long,",
+				"          IS_ACTIVE as boolean,",
+				"          BILLING_EMAIL as string,",
+				"          CREATED_AT as long,",
+				"          UPDATED_AT as long",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:false,",
+				"     updateable:true,",
+				"     upsertable:false,",
+				"     keys:['ID'],",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          ID,",
+				"          BILLING_EMAIL",
+				"     )) ~> sink1"
+			]
+		}
+	}
+}
