@@ -15,7 +15,7 @@
 			"sinks": [
 				{
 					"dataset": {
-						"referenceName": "subscription",
+						"referenceName": "SUBSCRIPTION_KEY",
 						"type": "DatasetReference"
 					},
 					"name": "sink1"
