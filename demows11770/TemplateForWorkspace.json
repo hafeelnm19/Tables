@@ -11,10 +11,19 @@
 			"type": "secureString",
 			"metadata": "Secure string for 'connectionString' of 'AzureSqlDatabase1'"
 		},
+		"SUBSCRIPTION_KEY_VAULT_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'SUBSCRIPTION_KEY_VAULT'",
+			"defaultValue": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=sqlserver1219.database.windows.net;Initial Catalog=subscription;User ID=azureuser"
+		},
 		"demows11770-WorkspaceDefaultSqlServer_connectionString": {
 			"type": "secureString",
 			"metadata": "Secure string for 'connectionString' of 'demows11770-WorkspaceDefaultSqlServer'",
 			"defaultValue": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=tcp:demows11770.sql.azuresynapse.net,1433;Initial Catalog=@{linkedService().DBName}"
+		},
+		"AzureKeyVault1_properties_typeProperties_baseUrl": {
+			"type": "string",
+			"defaultValue": "https://usernamesynapse.vault.azure.net/"
 		},
 		"demows11770-WorkspaceDefaultStorage_properties_typeProperties_url": {
 			"type": "string",
@@ -102,9 +111,9 @@
 								}
 							},
 							"staging": {},
-							"integrationRuntime": {
-								"referenceName": "AutoResolveIntegrationRuntime",
-								"type": "IntegrationRuntimeReference"
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
 							},
 							"traceLevel": "Fine"
 						}
@@ -190,6 +199,73 @@
 			]
 		},
 		{
+			"name": "[concat(parameters('workspaceName'), '/SUBSCRIPTION_KEY')]",
+			"type": "Microsoft.Synapse/workspaces/datasets",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "SUBSCRIPTION_KEY_VAULT",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "ID",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "UUID",
+						"type": "varchar"
+					},
+					{
+						"name": "ORG_ID",
+						"type": "varchar"
+					},
+					{
+						"name": "ORG_HANDLE",
+						"type": "varchar"
+					},
+					{
+						"name": "TIER_ID",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "BILLING_DATE",
+						"type": "bigint",
+						"precision": 19
+					},
+					{
+						"name": "IS_ACTIVE",
+						"type": "bit"
+					},
+					{
+						"name": "BILLING_EMAIL",
+						"type": "varchar"
+					},
+					{
+						"name": "CREATED_AT",
+						"type": "bigint",
+						"precision": 19
+					},
+					{
+						"name": "UPDATED_AT",
+						"type": "bigint",
+						"precision": 19
+					}
+				],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "ASG_SUBSCRIPTION"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/linkedServices/SUBSCRIPTION_KEY_VAULT')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('workspaceName'), '/subscription')]",
 			"type": "Microsoft.Synapse/workspaces/datasets",
 			"apiVersion": "2019-06-01-preview",
@@ -257,6 +333,19 @@
 			]
 		},
 		{
+			"name": "[concat(parameters('workspaceName'), '/AzureKeyVault1')]",
+			"type": "Microsoft.Synapse/workspaces/linkedServices",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"annotations": [],
+				"type": "AzureKeyVault",
+				"typeProperties": {
+					"baseUrl": "[parameters('AzureKeyVault1_properties_typeProperties_baseUrl')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
 			"name": "[concat(parameters('workspaceName'), '/AzureSqlDatabase1')]",
 			"type": "Microsoft.Synapse/workspaces/linkedServices",
 			"apiVersion": "2019-06-01-preview",
@@ -268,6 +357,35 @@
 				}
 			},
 			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/SUBSCRIPTION_KEY_VAULT')]",
+			"type": "Microsoft.Synapse/workspaces/linkedServices",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"annotations": [],
+				"type": "AzureSqlDatabase",
+				"typeProperties": {
+					"connectionString": "[parameters('SUBSCRIPTION_KEY_VAULT_connectionString')]",
+					"password": {
+						"type": "AzureKeyVaultSecret",
+						"store": {
+							"referenceName": "AzureKeyVault1",
+							"type": "LinkedServiceReference"
+						},
+						"secretName": "Password",
+						"secretVersion": "7b2994b50fb94906af414d4354debc00"
+					}
+				},
+				"connectVia": {
+					"referenceName": "AutoResolveIntegrationRuntime",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]",
+				"[concat(variables('workspaceId'), '/linkedServices/AzureKeyVault1')]"
+			]
 		},
 		{
 			"name": "[concat(parameters('workspaceName'), '/demows11770-WorkspaceDefaultSqlServer')]",
@@ -428,7 +546,7 @@
 					"sources": [
 						{
 							"dataset": {
-								"referenceName": "subscription",
+								"referenceName": "SUBSCRIPTION_KEY",
 								"type": "DatasetReference"
 							},
 							"name": "source1"
@@ -437,7 +555,7 @@
 					"sinks": [
 						{
 							"dataset": {
-								"referenceName": "subscription",
+								"referenceName": "SUBSCRIPTION_KEY",
 								"type": "DatasetReference"
 							},
 							"name": "sink1"
@@ -502,7 +620,7 @@
 				}
 			},
 			"dependsOn": [
-				"[concat(variables('workspaceId'), '/datasets/subscription')]"
+				"[concat(variables('workspaceId'), '/datasets/SUBSCRIPTION_KEY')]"
 			]
 		},
 		{
