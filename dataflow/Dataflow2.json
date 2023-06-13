@@ -6,7 +6,7 @@
 			"sources": [
 				{
 					"dataset": {
-						"referenceName": "subscription",
+						"referenceName": "SUBSCRIPTION_KEY",
 						"type": "DatasetReference"
 					},
 					"name": "source1"
